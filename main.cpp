@@ -1,19 +1,28 @@
 //TBD: 
 //      - implement get_possible_moves better
-//      - allow user to enter puzzle
 //      - implement heuristics
 
 
 #include <iostream>
 #include <vector>
+#include <chrono>
 
 const int puzzle_size = 9;
 const int row_size = 3;
 int max_node_count = 0;
 int num_expanded_nodes = 0;
+int max_node_depth = 0;
+
 //last digit represents node depth 
 const std::vector<int> goal_state{ 1, 2, 3, 4, 5, 6, 7, 8, 0, 0 };
-std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 0, 8, 0 };
+std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0, 0 };//Trivial
+//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 0, 8, 0 };//Very easy
+//std::vector<int> puzzle{ 1, 2, 0, 4, 5, 3, 7, 8, 6, 0 };//Easy
+//std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6, 0 };//Doable
+//std::vector<int> puzzle{ 8, 7, 1, 6, 0, 2, 5, 4, 3, 0 };//Oh boy
+//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0, 0 };//Impossible
+
+std::vector< std::vector<int> > explored_nodes;
 
 void print_puzzle(std::vector<int> p, int s, int r){
     for(int i = 1; i<=s;i++){
@@ -28,10 +37,25 @@ void print_puzzle(std::vector<int> p, int s, int r){
     std::cout<<("\n");
 }
 
+bool is_duplicate(std::vector<int> p){
+    p[puzzle_size] = 0;
+    for(int i = 0; i < explored_nodes.size();i++){
+        if(p == explored_nodes[i]){
+            return true;
+        }
+    }
+    return false;
+}
+
 std::vector< std::vector<int> > get_possible_moves (std::vector<int> p){
     std::vector< std::vector<int> > possible_moves;
     std::vector<int> temp_move;
     int current_depth = p[puzzle_size] + 1;
+    p[puzzle_size] = 0;
+    if(current_depth > max_node_depth){
+        max_node_depth = current_depth;
+    }
+    explored_nodes.push_back(p);
     //get possible moves 
     //possible operators swap blank space with tile above, below, left, or right of it
     //hard coded solution fix to something better
@@ -201,8 +225,11 @@ std::vector< std::vector<int> > get_possible_moves (std::vector<int> p){
 }
 
 std::vector<int> solve_puzzle(std::vector<int> p ){
+    std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
+    std::vector<int> no_solution{ -1 };
     std::vector< std::vector<int> > queue;
     std::vector< std::vector<int> > possible_moves;
+    explored_nodes.clear();
     queue.push_back(p);
     std::vector<int> current_node;
     int temp_depth = 0;
@@ -215,22 +242,31 @@ std::vector<int> solve_puzzle(std::vector<int> p ){
             current_node[puzzle_size] = temp_depth;
             std::cout<<("Solution found!\n");
             print_puzzle(current_node, puzzle_size, row_size);
+            std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
+            std::chrono::microseconds elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            std::cout << "Elapsed time: " << elapsed_time.count() << " micro seconds" << std::endl;
+            
             return current_node;
         }
         current_node[puzzle_size] = temp_depth;
-        std::cout<<("Expanding State: \n");
-        print_puzzle(current_node, puzzle_size, row_size);
-        num_expanded_nodes++;
-        possible_moves = get_possible_moves(current_node);
-        for(int i = 0; i<possible_moves.size();i++){
-            queue.push_back(possible_moves[i]);
-        }
-        if(queue.size()>max_node_count){
-            max_node_count = queue.size();
+        if(!is_duplicate(current_node)){
+            std::cout<<("Expanding State: \n");
+            print_puzzle(current_node, puzzle_size, row_size);
+            num_expanded_nodes++;
+            possible_moves = get_possible_moves(current_node);
+            for(int i = 0; i<possible_moves.size();i++){
+                queue.push_back(possible_moves[i]);
+            }
+            if(queue.size()>max_node_count){
+                max_node_count = queue.size();
+            }
         }
     }
-    std::cout<<("This puzzle has no solution.\n");
-    std::vector<int> no_solution{ -1 };
+    std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
+    std::chrono::microseconds elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+    std::cout << "Elapsed time: " << elapsed_time.count()/1000000 << " seconds" << std::endl;
+    
+    std::cout<<("THIS PUZZLE HAS NO SOLUTION.\n");
     return no_solution;
 }
 
@@ -240,7 +276,13 @@ int main (){
     std::cin>>(input);
     if(input=='Y'){
         std::cout<<("Please enter the puzzle you would like solved using 0 to represent the blank space\n");
-        //get user input and store in puzzle
+        int input = 0;
+        puzzle.clear();
+        for(int i = 0;i<puzzle_size;i++){
+            std::cin>>(input);
+            puzzle.push_back(input);
+        }
+        puzzle.push_back(0);
     }
     std::cout<<("Puzzle to be solved: \n");
     print_puzzle(puzzle,puzzle_size,row_size);
@@ -257,5 +299,8 @@ int main (){
         std::cout<<(goal_node[puzzle_size]);
         std::cout<<(".\n \n");
     }
+    std::cout<<("The maximum depth reached was: ");
+    std::cout<<(max_node_depth);
+    std::cout<<(".\n \n");
     return 0;
 }
