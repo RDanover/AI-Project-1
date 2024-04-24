@@ -47,17 +47,46 @@ bool is_duplicate(std::vector<int> p, int s){
     return false;
 }
 
-std::vector< std::vector<int> > uniform_cost_search(std::vector<int> p, int s, int r, std::vector<int> g){
+std::vector< std::vector<int> > uniform_cost_search(std::vector< std::vector<int> > p, int s, int r, std::vector<int> g){
     std::vector< std::vector<int> > ordered_moves;
+    ordered_moves = p;
     return ordered_moves;
 }
 
-std::vector< std::vector<int> > manhattan_distance(std::vector<int> p, int s, int r, std::vector<int> g){
+std::vector< std::vector<int> > manhattan_distance(std::vector< std::vector<int> > p, int s, int r, std::vector<int> g){
     std::vector< std::vector<int> > ordered_moves;
+    int d = 2 * r - 2;//maximum distance
+    int j = 0;
+    int h = 0;
+    for(int a = 0; a < p.size(); a++){
+        for(int i = 0; i < s; i++){
+            if(p.at(a)[i]==0){
+                //special case blank space
+                j = s-1;
+            }
+            else{
+                j = p.at(a)[i]-1;
+            }
+            if(i = j){
+                break;
+            }
+            for(int k = 1; k <= d; k++){
+                if((i==j+k)||(i==j-k)||(i==j-r-(k-1))||(i==j+r+(k-1))){
+                    h += k;
+                    break;
+                }
+            }
+        }
+        p.at(a).push_back(h);
+        j = 0;
+        h = 0;
+    }
+    //sort puzzle states from Least to Greatest p[s+1]
+    //pop last index off all moves
     return ordered_moves;
 }
 
-std::vector< std::vector<int> > misplaced_tile(std::vector<int> p, int s, int r, std::vector<int> g){
+std::vector< std::vector<int> > misplaced_tile(std::vector< std::vector<int> > p, int s, int r, std::vector<int> g){
     std::vector< std::vector<int> > ordered_moves;
     return ordered_moves;
 }
