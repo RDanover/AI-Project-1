@@ -6,7 +6,7 @@ Instructions for how to run:
 2. In directory where main.cpp is run the command: g++ -std=c++11 main.cpp 
 3. Then run the command: ./a.out
 4. In the terminal, when prompted whether you would like to enter a puzzle to be solved enter "Y"
-5. Enter the puzzle you would like solved
+5. Enter the puzzle you would like solved</br>
    for example: let 0 represent the blank space in the puzzle to solve the puzzle:</br>
    0 1 2</br>
    4 5 3</br>
