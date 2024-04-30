@@ -1,7 +1,7 @@
-Project Description:
+#Project Description:</br>
 This project uses A* search using uniform cost, Manhattan Distance, and Misplaced Tile heuristics to solve the 8 sliding block puzzle. This program can take in any 8 sliding block puzzle arrangement and will determine whether it is solvable. If the puzzle is solvable it will give the minimum number of moves needed for an optimal solution (the depth of the goal node). This program does not provide the steps to solve the problem. 
 
-Instructions for how to run:
+#Instructions for how to run:
 1. download main.cpp
 2. In directory where main.cpp is run the command: g++ -std=c++11 main.cpp 
 3. Then run the command: ./a.out
