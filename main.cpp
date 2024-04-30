@@ -11,11 +11,11 @@ const int row_size = 3;
 
 std::vector<int> goal_state{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };
 //uncomment puzzle to make it the default
-//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
+std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 0, 8 };//Very easy
 //std::vector<int> puzzle{ 1, 2, 0, 4, 5, 3, 7, 8, 6 };//Easy
 //std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
-std::vector<int> puzzle{ 8, 7, 1, 6, 0, 2, 5, 4, 3 };//Oh boy
+//std::vector<int> puzzle{ 8, 7, 1, 6, 0, 2, 5, 4, 3 };//Oh boy
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0 };//Impossible
 
 //End puzzle specific section
@@ -63,7 +63,8 @@ Output: True if state has been expanded before
         False if state has not been expanded before
 */
 bool is_duplicate(std::vector<int> p, int s){
-    p[s] = 0;
+    p[s] = 0;//ensure depth is 0
+    p[s+1] = 0;//ensure heuristic is zero
     for(int i = 0; i < explored_nodes.size();i++){
         if(p == explored_nodes[i]){
             return true;
@@ -162,8 +163,8 @@ std::vector< std::vector<int> > get_possible_moves (std::vector<int> p, int s, i
     std::vector<int> temp_move{-1};
     int current_depth = p[s] + 1;
 
-    p[s] = 0;
-    p[s+1] = 0;
+    p[s] = 0;//ensure depth is zero
+    p[s+1] = 0;//ensure heuristic is zero
     explored_nodes.push_back(p);
 
     //possible operators swap blank space with tile above, below, left, or right of it
@@ -277,13 +278,21 @@ std::vector<int> solve_puzzle(std::vector<int> p, int s, int r, std::vector<int>
         print_puzzle(current_node, s, r);
         std::cout<<("Expanding this state.\n\n");
         num_expanded_nodes++;
+
+        temp_depth = current_node[s];
+        temp_h = current_node[s+1];
+        current_node[s] = 0;
+        current_node[s+1] = 0;
         possible_moves = get_possible_moves(current_node,s,r);
+        current_node[s] = temp_depth;
+        current_node[s+1] = temp_h;
+
         if(possible_moves.size()>0){
             //call given heuristic to add h values to moves in possible_moves
             if(h==2){
                 possible_moves = euclidean_distance(possible_moves, s,r);
             }
-            else{
+            else if(h==3){
                 possible_moves = misplaced_tile(possible_moves, s,r);
             }
 
@@ -340,11 +349,21 @@ int main (){
     std::chrono::microseconds elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
     //output stats
-    std::cout << ("Elapsed time: ") << elapsed_time.count() <<(" micro seconds. \n\n");
+    std::cout <<"\nAlgorithm used: ";
+    if(h_input==1){
+        std::cout <<"Uniform Cost\n\n";
+    }
+    else if(h_input==2){
+        std::cout <<"Euclidean Distance\n\n";
+    }
+    else if(h_input==3){
+        std::cout <<"Misplaced Tile\n\n";
+    }
     std::cout<<("To solve this problem the search algorithm expanded a total of ") << (num_expanded_nodes) << (" nodes. \n \n");
     std::cout<<("The maximum number of nodes in the queue at any one time was: ") << (max_node_count) << (".\n \n");
     if(goal_node[0]!= -1){//if puzzle was solved display depth of goal node
         std::cout<<("The depth of the goal node was: ") << (goal_node[puzzle_size]) << (".\n \n");
     }
+    std::cout << ("Elapsed time: ") << elapsed_time.count() <<(" micro seconds. \n\n");
     return 0;
 }
