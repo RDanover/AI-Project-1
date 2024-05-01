@@ -11,10 +11,10 @@ const int row_size = 3;
 
 std::vector<int> goal_state{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };
 //uncomment puzzle to make it the default
-std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
+//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 0, 8 };//Very easy
 //std::vector<int> puzzle{ 1, 2, 0, 4, 5, 3, 7, 8, 6 };//Easy
-//std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
+std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
 //std::vector<int> puzzle{ 8, 7, 1, 6, 0, 2, 5, 4, 3 };//Oh boy
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0 };//Impossible
 
@@ -279,13 +279,7 @@ std::vector<int> solve_puzzle(std::vector<int> p, int s, int r, std::vector<int>
         std::cout<<("Expanding this state.\n\n");
         num_expanded_nodes++;
 
-        temp_depth = current_node[s];
-        temp_h = current_node[s+1];
-        current_node[s] = 0;
-        current_node[s+1] = 0;
         possible_moves = get_possible_moves(current_node,s,r);
-        current_node[s] = temp_depth;
-        current_node[s+1] = temp_h;
 
         if(possible_moves.size()>0){
             //call given heuristic to add h values to moves in possible_moves
