@@ -1,8 +1,8 @@
 #include <stdlib.h> //used for abs function
 #include <iostream> //used to get user input and output
 #include <vector> 
-#include <chrono> //used for timing 
 #include <algorithm> //used for sort function
+#include <unordered_set> //used for hashing explored nodes
 
 //Change lines 9 - 19 to alter the program to work for any size sliding block puzzle so long as the row size >1
 //Begin puzzle specific section
@@ -14,9 +14,9 @@ std::vector<int> goal_state{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 0, 8 };//Very easy
 //std::vector<int> puzzle{ 1, 2, 0, 4, 5, 3, 7, 8, 6 };//Easy
-std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
+//std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
 //std::vector<int> puzzle{ 8, 7, 1, 6, 0, 2, 5, 4, 3 };//Oh boy
-//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0 };//Impossible
+std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0 };//Impossible
 
 //End puzzle specific section
 
@@ -24,8 +24,27 @@ std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
 int max_node_count = 0;
 int num_expanded_nodes = 0;
 
+// Hash function taken from https://www.geeksforgeeks.org/unordered-set-of-vectors-in-c-with-examples/ 
+struct hashFunction  
+{ 
+  size_t operator()(const std::vector<int>  
+                    &myVector) const 
+  { 
+    std::hash<int> hasher; 
+    size_t answer = 0; 
+      
+    for (int i : myVector)  
+    { 
+      answer ^= hasher(i) + 0x9e3779b9 +  
+                (answer << 6) + (answer >> 2); 
+    } 
+    return answer; 
+  } 
+}; 
+
 //stores all previously expanded states
-std::vector< std::vector<int> > explored_nodes;
+std::unordered_set<std::vector<int>, hashFunction> explored_nodes;
+
 
 //This function is where the A* comparison takes place where the H(n)+G(n) of two different states are compared
 bool compareVectors(const std::vector<int>& a, const std::vector<int>& b){
@@ -55,22 +74,26 @@ void print_puzzle(std::vector<int> p, int s, int r){
 }
 
 /*
-Description: helper function to determine if a state has already been expanded by checking the explored nodes vector
-Input:  std::vector<int> p: state representation vector 
+Description: helper function to determine if a state has already been expanded by checking the explored nodes unordered set
+Input:  const std::vector<int> &p: state representation vector assumes G(n) and H(n) are both 0
         int s: puzzle size
-        int r: row size
 Output: True if state has been expanded before
         False if state has not been expanded before
 */
-bool is_duplicate(std::vector<int> p, int s){
-    p[s] = 0;//ensure depth is 0
-    p[s+1] = 0;//ensure heuristic is zero
-    for(int i = 0; i < explored_nodes.size();i++){
-        if(p == explored_nodes[i]){
-            return true;
-        }
-    }
-    return false;
+bool is_duplicate(const std::vector<int> &p, int s){
+    std::vector<int> temp = p;
+    // Check if the state exists in the explored nodes set
+    return explored_nodes.find(temp) != explored_nodes.end();
+}
+
+/*
+Description: helper function to add a state to the explored nodes unordered set
+Input:  const std::vector<int> &p: state representation vector assumes G(n) and H(n) are both 0
+        int s: puzzle size
+*/
+void add_explored(const std::vector<int>& p, int s) {
+    std::vector<int> temp = p;
+    explored_nodes.insert(temp);
 }
 
 /*
@@ -165,7 +188,7 @@ std::vector< std::vector<int> > get_possible_moves (std::vector<int> p, int s, i
 
     p[s] = 0;//ensure depth is zero
     p[s+1] = 0;//ensure heuristic is zero
-    explored_nodes.push_back(p);
+    add_explored(p,s);
 
     //possible operators swap blank space with tile above, below, left, or right of it
     for(int i = 0;i<s;i++){
@@ -333,17 +356,10 @@ int main (){
     std::cout<<("1. Uniform Cost Search \n2. Euclidean Distance \n3. Misplaced Tile \n Please enter the number of the heuristic would you like to use:\n ");
     std::cin>>(h_input);
 
-    //start timer
-    std::chrono::steady_clock::time_point start_time = std::chrono::steady_clock::now();
-
     std::vector<int> goal_node = solve_puzzle(puzzle, puzzle_size, row_size, goal_state, h_input);
     
-    //stop timer 
-    std::chrono::steady_clock::time_point end_time = std::chrono::steady_clock::now();
-    std::chrono::microseconds elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-
     //output stats
-    std::cout <<"\nAlgorithm used: ";
+    std::cout <<"\nHeuristic used: ";
     if(h_input==1){
         std::cout <<"Uniform Cost\n\n";
     }
@@ -358,6 +374,5 @@ int main (){
     if(goal_node[0]!= -1){//if puzzle was solved display depth of goal node
         std::cout<<("The depth of the goal node was: ") << (goal_node[puzzle_size]) << (".\n \n");
     }
-    std::cout << ("Elapsed time: ") << elapsed_time.count() <<(" micro seconds. \n\n");
     return 0;
 }
