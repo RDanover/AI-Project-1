@@ -10,10 +10,10 @@ const int row_size = 3;
 
 std::vector<int> goal_state{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };
 //uncomment puzzle to make it the default
-//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
+std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 0, 8 };//Very easy
 //std::vector<int> puzzle{ 1, 2, 0, 4, 5, 3, 7, 8, 6 };//Easy
-std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
+//std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
 //std::vector<int> puzzle{ 8, 7, 1, 6, 0, 2, 5, 4, 3 };//Oh boy
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0 };//Impossible
 
@@ -61,8 +61,15 @@ Output: True if state has been expanded before
         False if state has not been expanded before
 */
 bool is_duplicate(std::vector<int> p, int s){
+    int k = 0;
     for(int i = 0; i < explored_nodes.size();i++){
-        if(p == explored_nodes[i]){
+        k = 0;
+        for(int j=0; j<s;j++){
+            if(p[j]==explored_nodes.at(i)[j]){
+                k++;
+            }
+        }
+        if(k==s){
             return true;
         }
     }
@@ -260,41 +267,43 @@ std::vector<int> solve_puzzle(std::vector<int> p, int s, int r, std::vector<int>
         current_node[s] = 0;
         current_node[s+1] = 0;
         //if problem.GOAL-TEST(node.STATE) succeeds then return node
+        
         if(current_node == g){
             current_node[s] = temp_depth;
             std::cout<<("Solution found!\n");
             print_puzzle(current_node, s, r);
             return current_node;
         }
-        current_node[s] = temp_depth;
-        current_node[s+1] = temp_h;
+        if(!is_duplicate(current_node,s)){
+            current_node[s] = temp_depth;
+            current_node[s+1] = temp_h;
+            
+            //nodes = QUEUEING-FUNCTION(nodes,EXPAND(node,problem.OPERATORS))
+            std::cout<<("The best state to expand with g(n) = ")<<current_node[s]<<(" and h(n) = ")<<current_node[s+1]<<("\n");
+            print_puzzle(current_node, s, r);
+            std::cout<<("Expanding this state.\n\n");
+            num_expanded_nodes++;
 
-        //nodes = QUEUEING-FUNCTION(nodes,EXPAND(node,problem.OPERATORS))
-        std::cout<<("The best state to expand with g(n) = ")<<current_node[s]<<(" and h(n) = ")<<current_node[s+1]<<("\n");
-        print_puzzle(current_node, s, r);
-        std::cout<<("Expanding this state.\n\n");
-        num_expanded_nodes++;
+            possible_moves = get_possible_moves(current_node,s,r);
 
-        possible_moves = get_possible_moves(current_node,s,r);
+            if(possible_moves.size()>0){
+                //call given heuristic to add h values to moves in possible_moves
+                if(h==2){
+                    possible_moves = euclidean_distance(possible_moves, s,r);
+                }
+                else if(h==3){
+                    possible_moves = misplaced_tile(possible_moves, s,r);
+                }
 
-        if(possible_moves.size()>0){
-            //call given heuristic to add h values to moves in possible_moves
-            if(h==2){
-                possible_moves = euclidean_distance(possible_moves, s,r);
-            }
-            else if(h==3){
-                possible_moves = misplaced_tile(possible_moves, s,r);
-            }
-
-            for(int i = 0; i<possible_moves.size();i++){
-                queue.push_back(possible_moves[i]);
-            }
-            std::sort(queue.begin(),queue.end(), compareVectors);
-            if(queue.size()>max_node_count){
-                max_node_count = queue.size();
+                for(int i = 0; i<possible_moves.size();i++){
+                    queue.push_back(possible_moves[i]);
+                }
+                std::sort(queue.begin(),queue.end(), compareVectors);
+                if(queue.size()>max_node_count){
+                    max_node_count = queue.size();
+                }
             }
         }
-
     }
 
     std::cout<<("THIS PUZZLE HAS NO SOLUTION.\n");
