@@ -1,4 +1,4 @@
-#include <stdlib.h> //used for abs function
+#include <stdlib.h> //used for abs and sqrt functions
 #include <iostream> //used to get user input and output
 #include <vector> 
 #include <algorithm> //used for sort function
@@ -8,28 +8,35 @@
 const int puzzle_size = 9;
 const int row_size = 3;
 
-std::vector<int> goal_state{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };
+std::vector<int> goal_puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };
 //uncomment puzzle to make it the default
-///std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
+//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 8, 0 };//Trivial
 //std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 7, 0, 8 };//Very easy
 //std::vector<int> puzzle{ 1, 2, 0, 4, 5, 3, 7, 8, 6 };//Easy
 //std::vector<int> puzzle{ 0, 1, 2, 4, 5, 3, 7, 8, 6 };//Doable
+//std::vector<int> puzzle{ 1, 0, 3, 4, 2, 6, 7, 5, 8 };//Trace
 //std::vector<int> puzzle{ 8, 7, 1, 6, 0, 2, 5, 4, 3 };//Oh boy
-//std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0 };//Impossible
-std::vector<int> puzzle{ 1, 0, 3, 4, 2, 6, 7, 5, 8 };//Trace
+std::vector<int> puzzle{ 1, 2, 3, 4, 5, 6, 8, 7, 0 };//Impossible
+
 
 //End puzzle specific section
+class Puzzle_State{
+    public:
+        std::vector<int> puzzle;        
+        int g = 0;
+        double h = 0; 
+};
 
 //variables used for statistics
 int max_node_count = 0;
 int num_expanded_nodes = 0;
 
-//stores all previously expanded states
+//stores all previously expanded puzzles
 std::vector< std::vector<int> > explored_nodes;
 
 //This function is where the A* comparison takes place where the H(n)+G(n) of two different states are compared
-bool compareVectors(const std::vector<int>& a, const std::vector<int>& b){
-    return (a[puzzle_size] + a[puzzle_size+1])<(b[puzzle_size] + b[puzzle_size+1]);
+bool compareVectors(const Puzzle_State a, const Puzzle_State b){
+    return (a.g + a.h)<(b.g + b.h);
 }
 
 /*
@@ -62,15 +69,8 @@ Output: True if state has been expanded before
         False if state has not been expanded before
 */
 bool is_duplicate(std::vector<int> p, int s){
-    int k = 0;
     for(int i = 0; i < explored_nodes.size();i++){
-        k = 0;
-        for(int j=0; j<s;j++){
-            if(p[j]==explored_nodes.at(i)[j]){
-                k++;
-            }
-        }
-        if(k==s){
+        if(explored_nodes[i]==p){
             return true;
         }
     }
@@ -78,13 +78,13 @@ bool is_duplicate(std::vector<int> p, int s){
 }
 
 /*
-Description: heuristic function that determines the euclidean distance sums of all given states
+Description: heuristic function that determines the manhattan distance sums of all given states
 Input:  std::vector< std::vector<int> > p: vector containing many state representation vectors
         int s: puzzle size
         int r: row size
 Output: Returns the original vector p with the heuristic value for each state updated to the correct value
 */
-std::vector< std::vector<int> > euclidean_distance(std::vector< std::vector<int> > p, int s, int r){
+std::vector< Puzzle_State > manhattan_distance(std::vector< Puzzle_State > p, int s, int r){ 
     int j = 0;//represents where the value at i is actually supposed to be located
     int h = 0;//heuristic value
     int row_cost_i = 0;
@@ -93,12 +93,12 @@ std::vector< std::vector<int> > euclidean_distance(std::vector< std::vector<int>
     for(int a = 0; a < p.size(); a++){
         //loops through each tile in the puzzle 
         for(int i = 0; i < s; i++){
-            if(p.at(a)[i]==0){
+            if(p.at(a).puzzle[i]==0){
                 //special case blank space
                 j = s-1;
             }
             else{
-                j = p.at(a)[i]-1;
+                j = p.at(a).puzzle[i]-1;
             }
             if(i!=j){
                 h+=abs(j%r - i%r);//column cost 
@@ -113,7 +113,7 @@ std::vector< std::vector<int> > euclidean_distance(std::vector< std::vector<int>
                 h+=abs(row_cost_i - row_cost_j);//row cost
             }
         }
-        p.at(a).at(s+1) = h;//set heuristic value to h
+        p.at(a).h = h;//set heuristic value to h
         //reset values before next iteration
         j = 0;
         h = 0;
@@ -124,30 +124,75 @@ std::vector< std::vector<int> > euclidean_distance(std::vector< std::vector<int>
 }
 
 /*
+Description: heuristic function that determines the euclidean distance of all given states
+Input:  std::vector< std::vector<int> > p: vector containing many state representation vectors
+        int s: puzzle size
+        int r: row size
+Output: Returns the original vector p with the heuristic value for each state updated to the correct value
+*/
+std::vector< Puzzle_State > euclidean_distance(std::vector< Puzzle_State > p, int s, int r){
+    int j = 0;//represents where the value at i is actually supposed to be located
+    double h = 0;
+    int row_i = 0;
+    int row_j = 0;
+    int column_i = 0;
+    int column_j = 0;
+    for(int a = 0; a < p.size(); a++){
+        for(int i = 0; i < s; i++){
+            if(p.at(a).puzzle[i]==0){
+                //special case blank space
+                j = s-1;
+            }
+            else{
+                j = p.at(a).puzzle[i]-1;
+            }
+            if(i!=j){
+                column_i = i%r;
+                column_j = i%r;
+                for(int k = 0; k < s;k++){//loop determines row for i and j by using ranges of each row 
+                    if((i>=k*r)&&(i<(k+1)*r)){
+                        row_i = k;
+                    }
+                    if((j>=k*r)&&(j<(k+1)*r)){
+                        row_j = k;
+                    }
+                }
+                h+=sqrt((column_i-column_j)^2+(row_i-row_j)^2);//heuristic cost
+            }
+        }
+        p.at(a).h = h;//set heuristic value to hs
+        j = 0;
+        h = 0;
+    }
+    return p;
+
+}
+
+/*
 Description: heuristic function that determines the sums of misplaced of all given states
 Input:  std::vector< std::vector<int> > p: vector containing many state representation vectors
         int s: puzzle size
         int r: row size
 Output: Returns the original vector p with the heuristic value for each state updated to the correct value
 */
-std::vector< std::vector<int> > misplaced_tile(std::vector< std::vector<int> > p, int s, int r){
+std::vector< Puzzle_State > misplaced_tile(std::vector< Puzzle_State > p, int s, int r){
     int j = 0;//represents where the value at i is actually supposed to be located
-    int h = 0;
+    double h = 0;
     for(int a = 0; a < p.size(); a++){
         for(int i = 0; i < s; i++){
-            if(p.at(a)[i]==0){
+            if(p.at(a).puzzle[i]==0){
                 //special case blank space
                 j = s-1;
             }
             else{
-                j = p.at(a)[i]-1;
+                j = p.at(a).puzzle[i]-1;
             }
 
             if(i != j){
                 h++;
             }
         }
-        p.at(a).at(s+1) = h;//set heuristic value to h
+        p.at(a).h = h;//set heuristic value to h
         j = 0;
         h = 0;
     }
@@ -162,71 +207,69 @@ Input:  std::vector<int> p: state representation vector
 Output: std::vector< std::vector<int> > possible_moves: vector containing all the unique valid states that can be reached from the input state
         Returns an empty vector if no unique valid states can be reached
 */
-std::vector< std::vector<int> > get_possible_moves (std::vector<int> p, int s, int r){
-    std::vector< std::vector<int> > possible_moves;
-    std::vector<int> temp_move{-1};
-    int current_depth = p[s] + 1;
+std::vector< Puzzle_State > get_possible_moves (Puzzle_State p, int s, int r){
+    std::vector< Puzzle_State > possible_moves;
+    Puzzle_State temp_move;
+    int current_depth = p.g + 1;
 
-    p[s] = 0;//ensure depth is zero
-    p[s+1] = 0;//ensure heuristic is zero
-    explored_nodes.push_back(p);
+    explored_nodes.push_back(p.puzzle);
 
     //possible operators swap blank space with tile above, below, left, or right of it
     for(int i = 0;i<s;i++){
-        if(p[i]==0){
+        if(p.puzzle[i]==0){
             if(i<((r-1)*r)){
                 //not in bottom row
                 //swap down
-                temp_move = p;
+                temp_move.puzzle = p.puzzle;
 
                 //i+r
-                temp_move[i] = p[i+r];
-                temp_move[i+r] = p[i];
+                temp_move.puzzle[i] = p.puzzle[i+r];
+                temp_move.puzzle[i+r] = p.puzzle[i];
 
-                if(!is_duplicate(temp_move,s)){
-                    temp_move[s] = current_depth;
+                if(!is_duplicate(temp_move.puzzle,s)){
+                    temp_move.g = current_depth;
                     possible_moves.push_back(temp_move);
                 }
             }
             if(r<=i){
                 //not in top row
                 //swap up
-                temp_move = p;
+                temp_move.puzzle = p.puzzle;
 
                 //i-r
-                temp_move[i] = p[i-r];
-                temp_move[i-r] = p[i];
+                temp_move.puzzle[i] = p.puzzle[i-r];
+                temp_move.puzzle[i-r] = p.puzzle[i];
 
-                if(!is_duplicate(temp_move,s)){
-                    temp_move[s] = current_depth;
+                if(!is_duplicate(temp_move.puzzle,s)){
+                    temp_move.g = current_depth;
                     possible_moves.push_back(temp_move);
                 }
             }
             if(i%r<=(r-2)){
                 //not in rightmost column
                 //swap right
-                temp_move = p;
+                temp_move.puzzle = p.puzzle;
 
                 //i+1
-                temp_move[i] = p[i+1];
-                temp_move[i+1] = p[i];
+                temp_move.puzzle[i] = p.puzzle[i+1];
+                temp_move.puzzle[i+1] = p.puzzle[i];
 
-                if(!is_duplicate(temp_move,s)){
-                    temp_move[s] = current_depth;
+                if(!is_duplicate(temp_move.puzzle,s)){
+                    temp_move.g = current_depth;
                     possible_moves.push_back(temp_move);
                 }
             }
             if(i%r>0){
                 //not in leftmost column
                 //swap left
-                temp_move = p;
+                temp_move.puzzle = p.puzzle;
                 
                 //i-1
-                temp_move[i] = p[i-1];
-                temp_move[i-1] = p[i];
+                temp_move.puzzle[i] = p.puzzle[i-1];
+                temp_move.puzzle[i-1] = p.puzzle[i];
 
-                if(!is_duplicate(temp_move,s)){
-                    temp_move[s] = current_depth;
+                if(!is_duplicate(temp_move.puzzle,s)){
+                    temp_move.g = current_depth;
                     possible_moves.push_back(temp_move);
                 }
             }
@@ -246,13 +289,12 @@ Input:  std::vector<int> p: initial state representation vector
 Output: std::vector<int> current_node: will return the goal state once it has been reached
         std::vector<int> no_solution: if there is no possible solution to the puzzle a vector with a single value -1 will be returned
 */
-std::vector<int> solve_puzzle(std::vector<int> p, int s, int r, std::vector<int> g, int h){
-    std::vector< std::vector<int> > queue;
-    std::vector< std::vector<int> > possible_moves;
-    std::vector<int> no_solution{ -1 };
-    std::vector<int> current_node;
-    int temp_depth = 0;
-    int temp_h = 0;
+Puzzle_State solve_puzzle(Puzzle_State p, int s, int r, Puzzle_State g, int h){
+    std::vector< Puzzle_State > queue;
+    std::vector< Puzzle_State > possible_moves;
+    Puzzle_State no_solution;
+    no_solution.g = -1;
+    Puzzle_State current_node;
 
     //nodes = MAKE-QUEUE(MAKE_NODE(problem.INITIAL-STATE))
     queue.push_back(p);
@@ -263,25 +305,18 @@ std::vector<int> solve_puzzle(std::vector<int> p, int s, int r, std::vector<int>
         //node = REMOVE-FRONT(nodes)
         current_node = queue.front();
         queue.erase(queue.begin());
-        temp_depth = current_node[s];
-        temp_h = current_node[s+1];
-        current_node[s] = 0;
-        current_node[s+1] = 0;
         //if problem.GOAL-TEST(node.STATE) succeeds then return node
         
-        if(current_node == g){
-            current_node[s] = temp_depth;
+        if(current_node.puzzle == g.puzzle){
             std::cout<<("Solution found!\n");
-            print_puzzle(current_node, s, r);
+            print_puzzle(current_node.puzzle, s, r);
             return current_node;
         }
-        if(!is_duplicate(current_node,s)){
-            current_node[s] = temp_depth;
-            current_node[s+1] = temp_h;
+        if(!is_duplicate(current_node.puzzle,s)){
             
             //nodes = QUEUEING-FUNCTION(nodes,EXPAND(node,problem.OPERATORS))
-            std::cout<<("The best state to expand with g(n) = ")<<current_node[s]<<(" and h(n) = ")<<current_node[s+1]<<("\n");
-            print_puzzle(current_node, s, r);
+            std::cout<<("The best state to expand with g(n) = ")<<current_node.g<<(" and h(n) = ")<<current_node.h<<("\n");
+            print_puzzle(current_node.puzzle, s, r);
             std::cout<<("Expanding this state.\n\n");
             num_expanded_nodes++;
 
@@ -290,12 +325,14 @@ std::vector<int> solve_puzzle(std::vector<int> p, int s, int r, std::vector<int>
             if(possible_moves.size()>0){
                 //call given heuristic to add h values to moves in possible_moves
                 if(h==2){
-                    possible_moves = euclidean_distance(possible_moves, s,r);
-                }
-                else if(h==3){
                     possible_moves = misplaced_tile(possible_moves, s,r);
                 }
-
+                else if(h==3){
+                    possible_moves = euclidean_distance(possible_moves, s,r);
+                }
+                else if(h==4){
+                    possible_moves = manhattan_distance(possible_moves, s,r);
+                }
                 for(int i = 0; i<possible_moves.size();i++){
                     queue.push_back(possible_moves[i]);
                 }
@@ -326,20 +363,25 @@ int main (){
             puzzle.push_back(input);
         }
     }
-
+    
     std::cout<<("Puzzle to be solved: \n");
     print_puzzle(puzzle,puzzle_size,row_size);
 
-    puzzle.push_back(0);//represents initial depth 
-    puzzle.push_back(0);//represents initial h value
-    goal_state.push_back(0);//set to zero to make comparisons easier 
-    goal_state.push_back(0);//set to zero to make comparisons easier
+    Puzzle_State initial_state;
+    initial_state.puzzle = puzzle;
+    initial_state.g = 0;
+    initial_state.h = 0;
+
+    Puzzle_State goal_state;
+    goal_state.puzzle = goal_puzzle;
+    goal_state.g = 0;
+    goal_state.h = 0;
 
     int h_input = 0;
-    std::cout<<("1. Uniform Cost Search \n2. Euclidean Distance \n3. Misplaced Tile \n Please enter the number of the heuristic would you like to use:\n ");
+    std::cout<<("1. Uniform Cost Search \n2. Misplaced Tile \n3. Euclidean Distance\n4. Manhattan Distance \n Please enter the number of the heuristic would you like to use:\n ");
     std::cin>>(h_input);
 
-    std::vector<int> goal_node = solve_puzzle(puzzle, puzzle_size, row_size, goal_state, h_input);
+    Puzzle_State goal_node = solve_puzzle(initial_state, puzzle_size, row_size, goal_state, h_input);
     
     //output stats
     std::cout <<"\nHeuristic used: ";
@@ -347,15 +389,19 @@ int main (){
         std::cout <<"Uniform Cost\n\n";
     }
     else if(h_input==2){
-        std::cout <<"Euclidean Distance\n\n";
-    }
-    else if(h_input==3){
         std::cout <<"Misplaced Tile\n\n";
     }
+    else if(h_input==3){
+        std::cout <<"Euclidean Distance\n\n";
+    }
+    else if(h_input==4){
+        std::cout <<"Manhattan Distance\n\n";
+    }
+
     std::cout<<("To solve this problem the search algorithm expanded a total of ") << (num_expanded_nodes) << (" nodes. \n \n");
     std::cout<<("The maximum number of nodes in the queue at any one time was: ") << (max_node_count) << (".\n \n");
-    if(goal_node[0]!= -1){//if puzzle was solved display depth of goal node
-        std::cout<<("The depth of the goal node was: ") << (goal_node[puzzle_size]) << (".\n \n");
+    if(goal_node.g!= -1){//if puzzle was solved display depth of goal node
+        std::cout<<("The depth of the goal node was: ") << (goal_node.g) << (".\n \n");
     }
     return 0;
 }
