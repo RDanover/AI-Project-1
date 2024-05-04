@@ -1,9 +1,10 @@
-#include <stdlib.h> //used for abs and sqrt functions
+#include <stdlib.h>//used for abs
+#include <cmath> //used for pow sqrt functions
 #include <iostream> //used to get user input and output
 #include <vector> 
 #include <algorithm> //used for sort function
 
-//Change lines 8 - 19 to alter the program to work for any size sliding block puzzle so long as the row size >1
+//Change lines 9 - 20 to alter the program to work for any size sliding block puzzle so long as the row size >1
 //Begin puzzle specific section
 const int puzzle_size = 9;
 const int row_size = 3;
@@ -133,10 +134,10 @@ Output: Returns the original vector p with the heuristic value for each state up
 std::vector< Puzzle_State > euclidean_distance(std::vector< Puzzle_State > p, int s, int r){
     int j = 0;//represents where the value at i is actually supposed to be located
     double h = 0;
-    int row_i = 0;
-    int row_j = 0;
-    int column_i = 0;
-    int column_j = 0;
+    double row_i = 0;
+    double row_j = 0;
+    double column_i = 0;
+    double column_j = 0;
     for(int a = 0; a < p.size(); a++){
         for(int i = 0; i < s; i++){
             if(p.at(a).puzzle[i]==0){
@@ -148,16 +149,17 @@ std::vector< Puzzle_State > euclidean_distance(std::vector< Puzzle_State > p, in
             }
             if(i!=j){
                 column_i = i%r;
-                column_j = i%r;
+                column_j = j%r;
                 for(int k = 0; k < s;k++){//loop determines row for i and j by using ranges of each row 
                     if((i>=k*r)&&(i<(k+1)*r)){
                         row_i = k;
                     }
+
                     if((j>=k*r)&&(j<(k+1)*r)){
                         row_j = k;
                     }
                 }
-                h+=sqrt((column_i-column_j)^2+(row_i-row_j)^2);//heuristic cost
+                h+=sqrt(pow(column_i - column_j, 2) + pow(row_i - row_j, 2));//heuristic cost
             }
         }
         p.at(a).h = h;//set heuristic value to hs
