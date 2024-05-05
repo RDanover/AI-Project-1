@@ -12,4 +12,4 @@ This project uses A* search using Uniform Cost, Misplaced Tile, Euclidean Distan
    4 5 3</br>
    7 8 6</br>
    enter: "0, 1, 2, 4, 5, 3, 7, 8, 6"</br>
-6. Then enter the number next to the heuristic you would like to be used to solve the puzzle (1, 2, or 3). 
+6. Then enter the number next to the heuristic you would like to be used to solve the puzzle (1, 2, 3, or 4). 
